@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Proxy Test</title>
+</head>
+
+<body>
+    <h1>Proxy Test</h1>
+    <input type="text" id="query" placeholder="Enter query">
+    <button id="fetchButton">Fetch Data via Proxy</button>
+    <div id="result"></div>
+
+    <script>
+        const fetchButton = document.getElementById('fetchButton');
+        const queryInput = document.getElementById('query');
+        const result = document.getElementById('result');
+
+        fetchButton.addEventListener('click', async () => {
+            const query = queryInput.value;
+            result.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query })
+                });
+
+                const data = await response.json();
+
+                const fetchDetails = async (url) => {
+                    try {
+                        const detailedResponse = await fetch('/api/search/details', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ links: [url] })
+                        });
+                        const detailedData = await detailedResponse.json();
+                        return detailedData.detailedResults[0].description;
+                    } catch (error) {
+                        console.error('Error fetching details:', error);
+                        return '';
+                    }
+                };
+
+                data.sources.forEach(async (source) => {
+                    const title = source.title;
+                    const summary = source.summary;
+                    const link = document.createElement('a');
+                    link.href = source.url;
+                    link.textContent = title;
+                    const p = document.createElement('p');
+                    p.textContent = summary;
+
+                    const description = await fetchDetails(source.url);
+
+                    const descriptionP = document.createElement('p');
+                    descriptionP.textContent = `Description: ${description}`;
+
+                    result.appendChild(link);
+                    result.appendChild(p);
+                    result.appendChild(descriptionP);
+                });
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                result.textContent = 'An error occurred while fetching data.';
+            }
+        });
+    </script>
+</body>
+
+</html>
